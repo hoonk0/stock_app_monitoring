@@ -36,6 +36,7 @@ from io import StringIO
 import json
 import os
 import subprocess
+from zoneinfo import ZoneInfo
 
 from datetime import datetime, timezone
 from math import sqrt
@@ -505,6 +506,14 @@ def git_push_optional(commit_msg: str = "auto update"):
 
 # ===== 간단 Long 시그널 생성 & 출력 =====
 
+# ===== 간단 Long 시그널 생성 & 출력 =====
+
+def _now_strings():
+    """현재 시각을 UTC ISO와 KST 표시 문자열로 반환."""
+    now_utc = datetime.now(timezone.utc)
+    kst = now_utc.astimezone(ZoneInfo("Asia/Seoul"))
+    return now_utc.isoformat().replace("+00:00","Z"), kst.strftime("%Y-%m-%d %H:%M:%S KST")
+
 def generate_long_signal(row: pd.Series) -> Optional[dict]:
     """EM 하단 밴드 근처에서 Long 진입 시그널 생성 (숏 없음)."""
     # 실시간 가격이 있으면 우선 사용, 없으면 기준가 사용
@@ -557,11 +566,14 @@ def print_long_signals(df: pd.DataFrame) -> None:
         s = generate_long_signal(r)
         if s:
             sigs.append(s)
+    utc_iso, kst_str = _now_strings()
     if not sigs:
-        print("\n[매수 시점] 없음 (하단 밴드 근처 종목 없음)")
+        print(f"\n검색 시각: {kst_str} | {utc_iso}")
+        print("[매수 시점] 없음 (하단 밴드 근처 종목 없음)")
         return
     title_suffix = ", 스큐 적용" if SKEW_MODE else ""
-    print(f"\n[매수 시점] (EM 하단 밴드 근처{title_suffix})")
+    print(f"\n검색 시각: {kst_str} | {utc_iso}")
+    print(f"[매수 시점] (EM 하단 밴드 근처{title_suffix})")
     for s in sigs:
         extra = ""
         if 'skew' in s and s['skew'] is not None:
@@ -699,8 +711,8 @@ if __name__ == "__main__":
         print_long_signals(df)
         print_upper_signals(df)
 
-        # 앱용 JSON 저장 (현재 파일 기준 상위 폴더에 output/data.json 생성)
-        out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
+        # 앱용 JSON 저장 (현재 파일 기준 output/data.json 생성)
+        out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "output"))
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, "data.json")
         write_json_for_app(df, out_path)
