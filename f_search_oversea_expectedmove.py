@@ -568,18 +568,18 @@ def print_long_signals(df: pd.DataFrame) -> None:
             sigs.append(s)
     utc_iso, kst_str = _now_strings()
     if not sigs:
-        print(f"\n검색 시각: {kst_str} | {utc_iso}")
-        print("[매수 시점] 없음 (하단 밴드 근처 종목 없음)")
+        print(f"\nSearch time: {kst_str} | {utc_iso}")
+        print("[Buy signal] None (no stocks near lower band)")
         return
-    title_suffix = ", 스큐 적용" if SKEW_MODE else ""
-    print(f"\n검색 시각: {kst_str} | {utc_iso}")
-    print(f"[매수 시점] (EM 하단 밴드 근처{title_suffix})")
+    title_suffix = ", skew applied" if SKEW_MODE else ""
+    print(f"\nSearch time: {kst_str} | {utc_iso}")
+    print(f"[Buy signal] (Near EM lower band{title_suffix})")
     for s in sigs:
         extra = ""
         if 'skew' in s and s['skew'] is not None:
-            extra = f", skew={s['skew']}, 매수비율={int(s['size']*100)}%"
-        print(f"{s['symbol']} ({s['expiry']}, DTE={s['dte']}) : 매수 {s['entry']} | 손절 {s['stop']} | 목표 {s['target']}  "
-              f"(기준가={s['basis']}, 하단={s['lower']}, EM=${s['em$']}{extra})")
+            extra = f", skew={s['skew']}, buy ratio={int(s['size']*100)}%"
+        print(f"{s['symbol']} ({s['expiry']}, DTE={s['dte']}) : Buy {s['entry']} | Stop {s['stop']} | Target {s['target']}  "
+              f"(Basis={s['basis']}, Lower={s['lower']}, EM=${s['em$']}{extra})")
 
 # ===== 상단 밴드 근처 (청산/매도 후보) 시그널 =====
 
@@ -617,9 +617,9 @@ def print_upper_signals(df: pd.DataFrame) -> None:
         if s:
             sigs.append(s)
     if not sigs:
-        print("\n[매도 시점] 없음 (상단 밴드 근처 종목 없음)")
+        print("\n[Sell signal] None (no stocks near upper band)")
         return
-    print("\n[매도 시점] (EM 상단 밴드 근처)")
+    print("\n[Sell signal] (Near EM upper band)")
     for s in sigs:
         skew_disp = ""
         try:
@@ -628,8 +628,8 @@ def print_upper_signals(df: pd.DataFrame) -> None:
                 skew_disp = f", skew={round(skew_val,2)}"
         except Exception:
             pass
-        print(f"{s['symbol']} ({s['expiry']}, DTE={s['dte']}) : 매도 {s['sell_price']}  "
-              f"(현재가={s['price']}, 상단={s['upper']}, 기준가={s['basis']}, EM=${s['em$']}{skew_disp})")
+        print(f"{s['symbol']} ({s['expiry']}, DTE={s['dte']}) : Sell {s['sell_price']}  "
+              f"(Current price={s['price']}, Upper={s['upper']}, Basis={s['basis']}, EM=${s['em$']}{skew_disp})")
 
 
 # ===== 메인 파이프라인 =====
@@ -721,7 +721,7 @@ if __name__ == "__main__":
         git_push_optional(commit_msg=f"auto: EM update @ {datetime.utcnow().isoformat()}Z")
 
     except KeyboardInterrupt:
-        print("\n⏹️ 중단됨 (사용자)")
+        print("\n⏹️ Interrupted (user)")
     except Exception as e:
-        print(f"❌ 치명적 오류: {e}")
+        print(f"❌ Critical error: {e}")
         
