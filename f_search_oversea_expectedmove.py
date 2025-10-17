@@ -499,27 +499,36 @@ def compute_expected_move(symbol: str, expiry_idx: int = 0) -> Optional[EMRow]:
 # ===== JSON save & (optional) Git push =====
 
 def write_json_for_app(df: pd.DataFrame, path: str) -> None:
+    """앱에서 쉽게 읽을 수 있는 간단 JSON으로 저장."""
     rows = []
-    for _, r in df.sort_values(["symbol","expiry"]).iterrows():
+
+    # 빈 DF 혹은 필요한 컬럼이 없을 때도 안전하게 처리
+    if (df is not None) and (not df.empty) and {'symbol','expiry'}.issubset(df.columns):
+        iter_df = df.sort_values(["symbol","expiry"])
+    else:
+        iter_df = pd.DataFrame(columns=['symbol','expiry'])  # 빈 반복자 역할
+
+    for _, r in iter_df.iterrows():
         rows.append({
             "symbol": str(r["symbol"]),
             "expiry": str(r["expiry"]),
-            "dte": None if pd.isna(r["dte"]) else float(r["dte"]),
-            "price": None if pd.isna(r["price"]) else float(r["price"]),  # unified
-            "em_dollar": None if pd.isna(r["em_straddle"]) else float(r["em_straddle"]),
-            "em_percent": None if pd.isna(r["em_pct_straddle"]) else float(r["em_pct_straddle"]),
-            "lower": None if pd.isna(r["lower_straddle"]) else float(r["lower_straddle"]),
-            "upper": None if pd.isna(r["upper_straddle"]) else float(r["upper_straddle"]),
-            "iv_atm_pct": None if pd.isna(r["iv_atm"]) else round(float(r["iv_atm"])*100, 2),
-            "skew_rr5": None if pd.isna(r["skew_rr5"]) else float(r["skew_rr5"]),
+            "dte": None if pd.isna(r.get("dte", np.nan)) else float(r["dte"]),
+            "price": None if pd.isna(r.get("price", np.nan)) else float(r["price"]),
+            "em_dollar": None if pd.isna(r.get("em_straddle", np.nan)) else float(r["em_straddle"]),
+            "em_percent": None if pd.isna(r.get("em_pct_straddle", np.nan)) else float(r["em_pct_straddle"]),
+            "lower": None if pd.isna(r.get("lower_straddle", np.nan)) else float(r["lower_straddle"]),
+            "upper": None if pd.isna(r.get("upper_straddle", np.nan)) else float(r["upper_straddle"]),
+            "iv_atm_pct": None if pd.isna(r.get("iv_atm", np.nan)) else round(float(r["iv_atm"])*100, 2),
+            "skew_rr5": None if pd.isna(r.get("skew_rr5", np.nan)) else float(r["skew_rr5"]),
             "session": str(r.get("session", "")),
         })
+
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
         "universe": UNIVERSE,
         "top_mkt_cap": TOP_MKT_CAP,
         "price_basis": PRICE_BASIS,
-        "rows": rows,
+        "rows": rows,  # 빈 경우에도 []로 저장
     }
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
